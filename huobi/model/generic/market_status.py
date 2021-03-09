@@ -14,7 +14,7 @@ class MarketStatus:
     """
 
     def __init__(self):
-        self.marketStatus = MarketStatus.NORMAL
+        self.marketStatus = 0
         self.haltStartTime = -1
         self.haltEndTime = -1
         self.affectedSymbols = ""
