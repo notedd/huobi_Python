@@ -32,11 +32,15 @@ def job(symbol,type,size):
                 db.rollback()
         db.close()
 
-#job('htusdt',CandlestickInterval.MIN1,2)
+job('htusdt',CandlestickInterval.MIN1,20)
+job('htusdt',CandlestickInterval.MIN15,10)
+#job('htusdt',CandlestickInterval.MIN60,24)
+#job('htusdt',CandlestickInterval.DAY1,30)
 
-scheduler = BlockingScheduler()
-scheduler.add_job(job, 'cron', minute='*/1', args=['htusdt',CandlestickInterval.MIN1 ,2])
-scheduler.add_job(job, 'cron', minute='*/10', args=['htusdt',CandlestickInterval.MIN15 ,2])
-scheduler.add_job(job, 'cron', minute='*/30', args=['htusdt',CandlestickInterval.MIN60 ,2])
-scheduler.add_job(job, 'cron', hour='*/12', args=['htusdt',CandlestickInterval.DAY1 ,2])
-scheduler.start()
+
+#scheduler = BlockingScheduler()
+#scheduler.add_job(job, 'cron', minute='*/1', args=['htusdt',CandlestickInterval.MIN1 ,2])
+#scheduler.add_job(job, 'cron', minute='*/10', args=['htusdt',CandlestickInterval.MIN15 ,2])
+#scheduler.add_job(job, 'cron', minute='*/30', args=['htusdt',CandlestickInterval.MIN60 ,2])
+#scheduler.add_job(job, 'cron', hour='*/12', args=['htusdt',CandlestickInterval.DAY1 ,2])
+#scheduler.start()
