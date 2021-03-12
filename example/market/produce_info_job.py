@@ -5,14 +5,18 @@ from huobi.utils import *
 import pymysql
 
 
-def produce_tickers():
-    t = time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(time.time()))
-    print('开始定时拉取任务 {}'.format(t))
+def get_db():
+    return pymysql.connect(host="127.0.0.1", user="test", password="12345678", database="test")
+
+
+# 获取最近24小时所有交易对的ticker信息入库
+def produce_last24_tickers():
     market_client = MarketClient(init_log=True)
     list_obj = market_client.get_market_tickers();
 
+    db = get_db()
     if list_obj and len(list_obj):
-        db = pymysql.connect(host="127.0.0.1", user="test", password="12345678", database="test")
+
         cursor = db.cursor()
         cursor.execute("truncate table tickers")
         db.commit()
@@ -43,16 +47,14 @@ def produce_tickers():
         db.close()
 
 
-def produce_kline(symbol, type, size):
-    t = time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(time.time()))
-    print('{} - {} - {}'.format(symbol, type, t))
+# 获取某个交易对kline数据入库
+def produce_symbol_kline(symbol, type, size):
     market_client = MarketClient(init_log=True)
     interval = type
-
     list_obj = market_client.get_candlestick(symbol, interval, size)
 
     if list_obj and len(list_obj):
-        db = pymysql.connect(host="127.0.0.1", user="test", password="12345678", database="test")
+        db = get_db()
         for obj in list_obj:
             rise_percent = 0;
             shake_percent = 0;
@@ -82,11 +84,10 @@ def produce_kline(symbol, type, size):
         db.close()
 
 
-def select_kline_symbol(symbol, vol, rise_percent, size):
-    t = time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(time.time()))
-    print('开始选取拉取kline交易对 {}'.format(t))
+# 从数据里面根据条件查询交易对
+def get_symbol_fromdb(symbol, vol, rise_percent, size):
     try:
-        db = pymysql.connect(host="127.0.0.1", user="test", password="12345678", database="test")
+        db = get_db()
         cursor = db.cursor()
         sqlo = """select symbol,volume,rise_percent from tickers where symbol like '{}' and volume>{} and rise_percent > {} order by volume desc limit {}"""
         sql = sqlo.format(symbol, vol, rise_percent, size)
@@ -102,19 +103,60 @@ def select_kline_symbol(symbol, vol, rise_percent, size):
         db.close()
 
 
-def produce_klines(min1, min15, min60, day1):
-    produce_tickers()
-    symbols = select_kline_symbol('%usdt', 10000000, 0.01, 20)
+# 根据条件选中交易对生成klines数据
+def produce_all_klines(min1, min15, min60, day1):
+    produce_last24_tickers()
+    symbols = get_symbol_fromdb('%usdt', 10000000, 0.01, 20)
     for obj in symbols:
         symbol = obj[0]
-        produce_kline(symbol, CandlestickInterval.MIN1, min1)
-        produce_kline(symbol, CandlestickInterval.MIN15, min15)
-        produce_kline(symbol, CandlestickInterval.MIN60, min60)
-        produce_kline(symbol, CandlestickInterval.DAY1, day1)
+        produce_symbol_kline(symbol, CandlestickInterval.MIN1, min1)
+        produce_symbol_kline(symbol, CandlestickInterval.MIN15, min15)
+        produce_symbol_kline(symbol, CandlestickInterval.MIN60, min60)
+        produce_symbol_kline(symbol, CandlestickInterval.DAY1, day1)
 
 
-#produce_klines(60, 96, 24, 30);
+# 从数据库查询kline聚合信息
+def get_symbol_klineinfos_fromdb(symbol, time_type, lastcount):
+    try:
+        db = get_db()
+        cursor = db.cursor()
+        sqlo = """select max(rise_percent) as max_rise_percent,min(rise_percent) as min_rise_percent,
+                         max(shake_percent) as max_shake_percent,min(shake_percent) as min_shake_percent,
+                         avg(rise_percent) as avg_rise_percent,avg(shake_percent) as avg_shake_percent
+                  from kline where symbol = '{}' and time_type='{}' order by time_id desc limit {}"""
+        sql = sqlo.format(symbol, time_type, lastcount)
+        # print(sql)
+        cursor.execute(sql)
+        data = cursor.fetchall()
+        db.commit()
+        return data
+    except Exception as e:
+        print(e)
+        db.rollback()
+    finally:
+        db.close()
 
-#produce_klines(5,2,2,2);
+
+# 产生分析数据 交易对的聚合情况
+def get_symbol_infos_fromdb(min1, min15, min60, day1):
+    symbols = get_symbol_fromdb('%usdt', 10000000, 0.01, 20)
+    data = {}
+    for obj in symbols:
+        symbol = obj[0]
+        data[CandlestickInterval.MIN1] = get_symbol_klineinfos_fromdb(symbol, CandlestickInterval.MIN1, min1)
+        data[CandlestickInterval.MIN15] = get_symbol_klineinfos_fromdb(symbol, CandlestickInterval.MIN15, min15)
+        data[CandlestickInterval.MIN60] = get_symbol_klineinfos_fromdb(symbol, CandlestickInterval.MIN60, min60)
+        data[CandlestickInterval.DAY1] = get_symbol_klineinfos_fromdb(symbol, CandlestickInterval.MIN1, day1)
+        print(symbol)
+        print(data)
+        print()
+
+
+
+# produce_klines(60, 96, 24, 30);
+
+# produce_klines(5,2,2,2);
 
 # select_kline_symbol('%usdt', 10000000, 0.01, 20)
+
+get_symbol_infos_fromdb(0, 12, 3, 0)
