@@ -6,7 +6,7 @@ import pymysql
 
 
 def get_db():
-    return pymysql.connect(host="127.0.0.1", user="test", password="12345678", database="test")
+    return pymysql.connect(host=g_host, user=g_user, password=g_password, database=g_database)
 
 
 # 获取最近24小时所有交易对的ticker信息入库
