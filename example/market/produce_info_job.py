@@ -156,6 +156,10 @@ def produce_symbol_klines(min1, min15, min60, day1):
         print(symbol)
 
         db = get_db()
+        cursor = db.cursor()
+        cursor.execute("truncate table symbol_klines")
+        db.commit()
+
         for objo in data:
             objone = data[objo]
             print(objo)
@@ -183,5 +187,6 @@ def produce_symbol_klines(min1, min15, min60, day1):
         db.close
 
 
-# select_kline_symbol('%usdt', 10000000, 0.01, 20)
+
+#produce_symbol_klines(0, 12, 3, 0)
 
