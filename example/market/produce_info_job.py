@@ -138,25 +138,52 @@ def get_symbol_klineinfos_fromdb(symbol, time_type, lastcount):
 
 
 # 产生分析数据 交易对的聚合情况
-def get_symbol_infos_fromdb(min1, min15, min60, day1):
+def produce_symbol_klines(min1, min15, min60, day1):
     symbols = get_symbol_fromdb('%usdt', 10000000, 0.01, 20)
     data = {}
+    times = {}
     for obj in symbols:
         symbol = obj[0]
         data[CandlestickInterval.MIN1] = get_symbol_klineinfos_fromdb(symbol, CandlestickInterval.MIN1, min1)
+        times[CandlestickInterval.MIN1] = min1;
         data[CandlestickInterval.MIN15] = get_symbol_klineinfos_fromdb(symbol, CandlestickInterval.MIN15, min15)
+        times[CandlestickInterval.MIN15] = min15;
         data[CandlestickInterval.MIN60] = get_symbol_klineinfos_fromdb(symbol, CandlestickInterval.MIN60, min60)
+        times[CandlestickInterval.MIN60] = min60;
         data[CandlestickInterval.DAY1] = get_symbol_klineinfos_fromdb(symbol, CandlestickInterval.MIN1, day1)
+        times[CandlestickInterval.DAY1] = day1;
+
         print(symbol)
-        print(data)
-        print()
 
+        db = get_db()
+        for objo in data:
+            objone = data[objo]
+            print(objo)
+            print(objone)
+            time = times[objo]
+            print(time)
 
+            if objone:
 
-# produce_klines(60, 96, 24, 30);
+                try:
+                    cursor = db.cursor()
+                    sqlo = """INSERT INTO symbol_klines(symbol,time_type,times,max_rise_percent,max_shake_percent,
+                              min_rise_percent,min_shake_percent,avg_rise_percent,avg_shake_percent)
+                                 VALUES ('{}','{}',{},{},{},{},{},{},{})"""
+                    sql = sqlo.format(symbol, objo, time, objone[0][0], objone[0][2], objone[0][1], objone[0][3],
+                                      objone[0][4], objone[0][5])
+                    print(sql)
+                    cursor = db.cursor()
+                    cursor.execute(sql)
+                    db.commit()
+                except Exception as e:
+                    print("error")
+                    print(e)
+                    db.rollback()
+        db.close
 
-# produce_klines(5,2,2,2);
 
 # select_kline_symbol('%usdt', 10000000, 0.01, 20)
 
-get_symbol_infos_fromdb(0, 12, 3, 0)
+produce_all_klines(120,12,3,2);
+produce_symbol_klines(0, 12, 3, 0)
