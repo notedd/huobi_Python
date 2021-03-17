@@ -142,6 +142,12 @@ def produce_symbol_klines(min1, min15, min60, day1):
     symbols = get_symbol_fromdb('%usdt', 10000000, 0.01, 20)
     data = {}
     times = {}
+
+    db = get_db()
+    cursor = db.cursor()
+    cursor.execute("truncate table symbol_klines")
+    db.commit()
+
     for obj in symbols:
         symbol = obj[0]
         data[CandlestickInterval.MIN1] = get_symbol_klineinfos_fromdb(symbol, CandlestickInterval.MIN1, min1)
@@ -154,11 +160,6 @@ def produce_symbol_klines(min1, min15, min60, day1):
         times[CandlestickInterval.DAY1] = day1;
 
         print(symbol)
-
-        db = get_db()
-        cursor = db.cursor()
-        cursor.execute("truncate table symbol_klines")
-        db.commit()
 
         for objo in data:
             objone = data[objo]
