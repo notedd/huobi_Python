@@ -185,5 +185,3 @@ def produce_symbol_klines(min1, min15, min60, day1):
 
 # select_kline_symbol('%usdt', 10000000, 0.01, 20)
 
-produce_all_klines(120,12,3,2);
-produce_symbol_klines(0, 12, 3, 0)
