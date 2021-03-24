@@ -116,16 +116,16 @@ def produce_all_klines(min1, min15, min60, day1):
 
 
 # 从数据库查询kline聚合信息
-def get_symbol_klineinfos_fromdb(symbol, time_type, lastcount):
+def get_symbol_klineinfos_fromdb(symbol, time_type, seconds):
     try:
         db = get_db()
         cursor = db.cursor()
         sqlo = """select max(rise_percent) as max_rise_percent,min(rise_percent) as min_rise_percent,
                          max(shake_percent) as max_shake_percent,min(shake_percent) as min_shake_percent,
                          avg(rise_percent) as avg_rise_percent,avg(shake_percent) as avg_shake_percent
-                  from kline where symbol = '{}' and time_type='{}' order by time_id desc limit {}"""
-        sql = sqlo.format(symbol, time_type, lastcount)
-        # print(sql)
+                  from kline where symbol = '{}' and time_type='{}' and time_id > (UNIX_TIMESTAMP()-{} )"""
+        sql = sqlo.format(symbol, time_type, seconds)
+        print(sql)
         cursor.execute(sql)
         data = cursor.fetchall()
         db.commit()
@@ -150,14 +150,14 @@ def produce_symbol_klines(min1, min15, min60, day1):
 
     for obj in symbols:
         symbol = obj[0]
-        data[CandlestickInterval.MIN1] = get_symbol_klineinfos_fromdb(symbol, CandlestickInterval.MIN1, min1)
-        times[CandlestickInterval.MIN1] = min1;
+        #data[CandlestickInterval.MIN1] = get_symbol_klineinfos_fromdb(symbol, CandlestickInterval.MIN1, min1)
+        #times[CandlestickInterval.MIN1] = min1;
         data[CandlestickInterval.MIN15] = get_symbol_klineinfos_fromdb(symbol, CandlestickInterval.MIN15, min15)
         times[CandlestickInterval.MIN15] = min15;
         data[CandlestickInterval.MIN60] = get_symbol_klineinfos_fromdb(symbol, CandlestickInterval.MIN60, min60)
         times[CandlestickInterval.MIN60] = min60;
-        data[CandlestickInterval.DAY1] = get_symbol_klineinfos_fromdb(symbol, CandlestickInterval.MIN1, day1)
-        times[CandlestickInterval.DAY1] = day1;
+        #data[CandlestickInterval.DAY1] = get_symbol_klineinfos_fromdb(symbol, CandlestickInterval.MIN1, day1)
+        #times[CandlestickInterval.DAY1] = day1;
 
         print(symbol)
 
