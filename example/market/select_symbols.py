@@ -45,7 +45,7 @@ def get_symbol_klines_fromdb(time_type):
         cursor = db.cursor()
         sqlo = """select symbol,create_time,time_type,times,max_rise_percent,max_shake_percent,
                               min_rise_percent,min_shake_percent,avg_rise_percent,avg_shake_percent
-                  from symbol_klines where create_time > (now()-60000) and time_type='{}' order by avg_rise_percent desc , max_rise_percent desc"""
+                  from symbol_klines where create_time > (now()-600) and time_type='{}' order by avg_rise_percent desc , max_rise_percent desc"""
         sql = sqlo.format(time_type)
         # print(sql)
         cursor.execute(sql)
