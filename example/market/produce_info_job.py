@@ -103,10 +103,55 @@ def get_symbol_fromdb(symbol, vol, rise_percent, size):
         db.close()
 
 
+def get_select_tickers_fromdb():
+    try:
+        day = time.strftime('%Y-%m-%d', time.localtime(time.time()))
+        db = get_db()
+        cursor = db.cursor()
+        sqlo = """select symbol,volume,rise_percent from select_tickers where day='{}'"""
+        sql = sqlo.format(day)
+        print(sql)
+        cursor.execute(sql)
+        data = cursor.fetchall()
+        db.commit()
+        return data
+    except Exception as e:
+        print(e)
+        db.rollback()
+    finally:
+        db.close()
+
+
+# 生成每日选中的交易对 每日追加进去
+def produce_select_tickers(symbol, vol, rise_percent, size):
+    db = get_db()
+    cursor = db.cursor()
+    sqlo = """select symbol,volume,rise_percent from tickers where symbol like '{}' and volume>{} and rise_percent > {} order by volume desc limit {}"""
+    sql = sqlo.format(symbol, vol, rise_percent, size)
+    print(sql)
+    cursor.execute(sql)
+    data = cursor.fetchall()
+    day = time.strftime('%Y-%m-%d', time.localtime(time.time()))
+
+    db = get_db()
+    for obj in data:
+        try:
+            cursor = db.cursor()
+            sqlo = """INSERT INTO select_tickers(symbol,day,volume,rise_percent) VALUES ('{}','{}',{},{})"""
+            sql = sqlo.format(obj[0], day, obj[1], obj[2])
+            cursor.execute(sql)
+            db.commit()
+        except Exception as e:
+            print(e)
+            db.rollback()
+
+    db.close()
+
+
 # 根据条件选中交易对生成klines数据
 def produce_all_klines(min1, min15, min60, day1):
     produce_last24_tickers()
-    symbols = get_symbol_fromdb('%usdt', 10000000, 0.01, 20)
+    symbols = get_select_tickers_fromdb()
     for obj in symbols:
         symbol = obj[0]
         produce_symbol_kline(symbol, CandlestickInterval.MIN1, min1)
@@ -139,7 +184,7 @@ def get_symbol_klineinfos_fromdb(symbol, time_type, seconds):
 
 # 产生分析数据 交易对的聚合情况
 def produce_symbol_klines(min1, min15, min60, day1):
-    symbols = get_symbol_fromdb('%usdt', 10000000, 0.01, 20)
+    symbols = get_select_tickers_fromdb()
     data = {}
     times = {}
 
@@ -150,14 +195,14 @@ def produce_symbol_klines(min1, min15, min60, day1):
 
     for obj in symbols:
         symbol = obj[0]
-        #data[CandlestickInterval.MIN1] = get_symbol_klineinfos_fromdb(symbol, CandlestickInterval.MIN1, min1)
-        #times[CandlestickInterval.MIN1] = min1;
+        # data[CandlestickInterval.MIN1] = get_symbol_klineinfos_fromdb(symbol, CandlestickInterval.MIN1, min1)
+        # times[CandlestickInterval.MIN1] = min1;
         data[CandlestickInterval.MIN15] = get_symbol_klineinfos_fromdb(symbol, CandlestickInterval.MIN15, min15)
         times[CandlestickInterval.MIN15] = min15;
         data[CandlestickInterval.MIN60] = get_symbol_klineinfos_fromdb(symbol, CandlestickInterval.MIN60, min60)
         times[CandlestickInterval.MIN60] = min60;
-        #data[CandlestickInterval.DAY1] = get_symbol_klineinfos_fromdb(symbol, CandlestickInterval.MIN1, day1)
-        #times[CandlestickInterval.DAY1] = day1;
+        # data[CandlestickInterval.DAY1] = get_symbol_klineinfos_fromdb(symbol, CandlestickInterval.MIN1, day1)
+        # times[CandlestickInterval.DAY1] = day1;
 
         print(symbol)
 
@@ -169,9 +214,7 @@ def produce_symbol_klines(min1, min15, min60, day1):
             print(time)
 
             if objone:
-
                 try:
-                    cursor = db.cursor()
                     sqlo = """INSERT INTO symbol_klines(symbol,time_type,times,max_rise_percent,max_shake_percent,
                               min_rise_percent,min_shake_percent,avg_rise_percent,avg_shake_percent)
                                  VALUES ('{}','{}',{},{},{},{},{},{},{})"""
@@ -187,7 +230,5 @@ def produce_symbol_klines(min1, min15, min60, day1):
                     db.rollback()
         db.close
 
-
-
-#produce_symbol_klines(0, 12, 3, 0)
-
+# produce_select_tickers('%usdt', 10000000, 0.01, 20)
+# print(get_select_tickers_fromdb())

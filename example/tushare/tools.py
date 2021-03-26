@@ -66,17 +66,35 @@ def product_daily_info(start_date, end_date):
     for obj in data:
         ts_code = ts_code + "," + obj[0]
     print(ts_code)
+
+    db = get_db()
+    cursor = db.cursor()
+    sqlo = "delete from stock_daily  where trade_date between '{}' and '{}'"
+    sql = sqlo.format(start_date, end_date)
+    cursor.execute(sql)
+    db.commit()
+
     produce_stock_info(freq='D', start_date=start_date, end_date=end_date, ts_codes=ts_code)
 
 
 def product_monthly_info(start_date, end_date):
     data = get_all_stock_base_info()
     ts_code = ""
+    count = 0
     for obj in data:
+        count = count + 1
         ts_code = ts_code + "," + obj[0]
-    print(ts_code)
+
+    db = get_db()
+    cursor = db.cursor()
+    sqlo = "delete from stock_monthly  where trade_date between '{}' and '{}'"
+    sql = sqlo.format(start_date, end_date)
+    cursor.execute(sql)
+    db.commit()
+
     produce_stock_info(freq='M', start_date=start_date, end_date=end_date, ts_codes=ts_code)
 
 
-# produce_stock_base_info();
-# produce_stock_info(freq='M', start_date='20210201', end_date='20210331', ts_codes='000002.SZ')
+# produce_stock_base_info()
+# produce_stock_info(freq='M', start_date='20210201', end_date='20210331', ts_codes='000004.SZ')
+# product_monthly_info("20210101", "20210301")
