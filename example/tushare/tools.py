@@ -2,6 +2,7 @@ import tushare as ts
 from sqlalchemy import create_engine
 import pymysql
 import constant
+import time
 
 
 def get_ts():
@@ -80,7 +81,7 @@ def produce_kline_info(freq, start_date, end_date, ts_codes):
     cursor = db.cursor()
     sqlo = "delete from {}  where trade_date between '{}' and '{}' and ts_code in ({})"
     sql = sqlo.format(table, start_date, end_date, ts_codes_db[0:-1])
-    #print(sql)
+    # print(sql)
     cursor.execute(sql)
     db.commit()
 
@@ -89,7 +90,7 @@ def produce_kline_info(freq, start_date, end_date, ts_codes):
     df.to_sql(table, con=conn, if_exists='append', index=False)
 
 
-def product_stock_kline_info(freq, start_date, end_date,size):
+def product_kline_info_all(freq, start_date, end_date, size):
     data = get_all_stock_base_info()
     ts_codes = []
     for obj in data:
@@ -97,6 +98,8 @@ def product_stock_kline_info(freq, start_date, end_date,size):
 
     for ts_codes_temp in partition(ts_codes, size):
         print("#####################################################################################")
+        if freq == 'M':
+            time.sleep(1)
         produce_kline_info(freq=freq, start_date=start_date, end_date=end_date, ts_codes=ts_codes_temp)
 
 
@@ -110,7 +113,50 @@ def partition(ls, size):
     return [ls[i:i + size] for i in range(0, len(ls), size)]
 
 
+def produce_daily_basic(trade_date, ts_codes):
+    ts_codes_tushare = ""
+    ts_codes_db = ""
+
+    for tscode in ts_codes:
+        ts_codes_tushare = ts_codes_tushare + "," + tscode
+        ts_codes_db = ts_codes_db + "'" + tscode + "',"
+
+    print(ts_codes_tushare[1:])
+    print(ts_codes_db[0:-1])
+
+    # 查询数据
+    df = get_ts().pro_api().daily_basic(ts_code=ts_codes_tushare[1:], trade_date=trade_date,
+                                        fields='ts_code,trade_date,close,turnover_rate,turnover_rate_f,volume_ratio,pe,pe_ttm,pb,ps,ps_ttm,dv_ratio,dv_ttm,total_share,float_share,free_share,total_mv,circ_mv')
+
+    print(df)
+
+    # 先删除已有的数据
+    db = get_db()
+    cursor = db.cursor()
+    sqlo = "delete from stock_daily_basic where trade_date between '{}' and '{}' and ts_code in ({})"
+    sql = sqlo.format(trade_date, trade_date, ts_codes_db[0:-1])
+    # print(sql)
+    cursor.execute(sql)
+    db.commit()
+
+    # 导入数据
+    conn = get_conn()
+    df.to_sql('stock_daily_basic', con=conn, if_exists='append', index=False)
+
+
+def produce_daily_basic_all(trade_date, size):
+    data = get_all_stock_base_info()
+    ts_codes = []
+    for obj in data:
+        ts_codes.append(obj[0])
+
+    for ts_codes_temp in partition(ts_codes, size):
+        print("#####################################################################################")
+        produce_daily_basic(trade_date, ts_codes=ts_codes_temp)
+
 # produce_stock_base_info()
 # produce_kline_info(freq='D', start_date='20210326', end_date='20210329', ts_codes=['000001.SZ','000004.SZ'])
-# product_stock_kline_info('D', "20210326", "20210329",50)
-# product_stock_kline_info('M', "20210101", "20210329",1)
+# product_kline_info_all('D', "20210326", "20210329",50)
+# product_kline_info_all('M', "20210129", "20210129",1)
+# produce_daily_basic(trade_date='20210326', ts_codes=['000001.SZ', '000004.SZ'])
+# produce_daily_basic_all(trade_date='20210329', size=100)
