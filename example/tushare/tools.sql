@@ -1,7 +1,7 @@
 DROP TABLE IF EXISTS stock_base_info;
 
 CREATE TABLE stock_base_info (
-     id int(11) NOT NULL AUTO_INCREMENT,
+     id bigint(20) unsigned NOT NULL AUTO_INCREMENT,
      ts_code varchar(255) DEFAULT NULL COMMENT '股票标识',
      symbol varchar(255) DEFAULT NULL COMMENT '股票代码',
      name varchar(255) DEFAULT NULL COMMENT '股票名称',
@@ -19,10 +19,12 @@ CREATE TABLE stock_base_info (
      update_time timestamp DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
      PRIMARY KEY (id)
 ) ENGINE = InnoDB;
+alter table stock_base_info add unique key stock_base_info_uniq(ts_code);
 
 
 DROP TABLE IF EXISTS stock_daily_basic;
 CREATE TABLE stock_daily_basic (
+    id bigint(20) unsigned NOT NULL AUTO_INCREMENT,
 	ts_code varchar(20) COMMENT 'TS股票代码',
 	trade_date date COMMENT '交易日期',
 	close float COMMENT '当日收盘价',
@@ -41,12 +43,13 @@ CREATE TABLE stock_daily_basic (
 	free_share float COMMENT '自由流通股本 （万）  ',
 	total_mv float COMMENT '总市值 （万元）',
 	circ_mv float COMMENT '流通市值（万元）',
-	PRIMARY KEY (ts_code, trade_date) COMMENT '股票和日期联合主键'
+	PRIMARY KEY (id)
 ) ENGINE = InnoDB COMMENT '全部股票每日重要的基本面指标';
-
+alter table stock_daily_basic add unique key stock_daily_basic_uniq(ts_code, trade_date);
 
 DROP TABLE IF EXISTS stock_daily;
 CREATE TABLE stock_daily (
+   id bigint(20) unsigned NOT NULL AUTO_INCREMENT,
    ts_code varchar(20) COMMENT 'TS股票代码',
    trade_date date COMMENT '交易日期',
    open float COMMENT '开盘价',
@@ -59,12 +62,13 @@ CREATE TABLE stock_daily (
    vol float COMMENT '成交量手',
    amount float COMMENT '成交额',
    adj_factor float COMMENT '复权因子',
-   PRIMARY KEY (ts_code, trade_date) COMMENT '股票和日期联合主键'
+   PRIMARY KEY (id)
 ) ENGINE = InnoDB COMMENT '股票每日行情';
-
+alter table stock_daily add unique key stock_daily_uniq(ts_code, trade_date);
 
 DROP TABLE IF EXISTS stock_weekly;
 CREATE TABLE stock_weekly (
+     id bigint(20) unsigned NOT NULL AUTO_INCREMENT,
      ts_code varchar(20) COMMENT 'TS股票代码',
      trade_date date COMMENT '交易日期',
      open float COMMENT '开盘价',
@@ -77,12 +81,13 @@ CREATE TABLE stock_weekly (
      vol float COMMENT '成交量手',
      amount float COMMENT '成交额',
      adj_factor float COMMENT '复权因子',
-     PRIMARY KEY (ts_code, trade_date) COMMENT '股票和日期联合主键'
+     PRIMARY KEY (id)
 ) ENGINE = InnoDB COMMENT '股票每周行情';
-
+alter table stock_weekly add unique key stock_weekly_uniq(ts_code, trade_date);
 
 DROP TABLE IF EXISTS stock_monthly;
 CREATE TABLE stock_monthly (
+      id bigint(20) unsigned NOT NULL AUTO_INCREMENT,
       ts_code varchar(20) COMMENT 'TS股票代码',
       trade_date date COMMENT '交易日期',
       open float COMMENT '开盘价',
@@ -95,12 +100,13 @@ CREATE TABLE stock_monthly (
       vol float COMMENT '成交量手',
       amount float COMMENT '成交额',
       adj_factor float COMMENT '复权因子',
-      PRIMARY KEY (ts_code, trade_date) COMMENT '股票和日期联合主键'
+      PRIMARY KEY (id)
 ) ENGINE = InnoDB COMMENT '股票每月行情';
-
+alter table stock_monthly add unique key stock_monthly_uniq(ts_code, trade_date);
 
 DROP TABLE IF EXISTS index_daily;
 CREATE TABLE index_daily (
+     id bigint(20) unsigned NOT NULL AUTO_INCREMENT,
      ts_code varchar(20) COMMENT 'TS股票代码',
      trade_date date COMMENT '交易日期',
      open float COMMENT '开盘价',
@@ -112,6 +118,6 @@ CREATE TABLE index_daily (
      pct_chg float COMMENT '涨跌幅',
      vol float COMMENT '成交量手',
      amount float COMMENT '成交额',
-     PRIMARY KEY (ts_code, trade_date) COMMENT '股票和日期联合主键'
+     PRIMARY KEY (id)
 ) ENGINE = InnoDB COMMENT '指数每日行情';
-
+alter table index_daily add unique key index_daily_uniq(ts_code, trade_date);
