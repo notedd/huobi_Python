@@ -3,6 +3,9 @@ from sqlalchemy import create_engine
 import pymysql
 import constant
 import time
+import numpy as np
+import pandas as pd
+import datetime
 
 
 def get_ts():
@@ -21,7 +24,6 @@ def get_db():
                            database=constant.g_database)
 
 
-# 股票基本信息入库 每次清空后重新载入最新
 def produce_stock_base_info():
     pro = get_ts().pro_api()
     data = pro.stock_basic(
@@ -35,12 +37,11 @@ def produce_stock_base_info():
     data.to_sql('stock_base_info', con=conn, if_exists='append', index=False)
 
 
-# 查询所有股票基本信息 全量查询
 def get_all_stock_base_info():
     db = get_db()
-    # 使用 cursor() 方法创建一个游标对象 cursor
+
     cursor = db.cursor()
-    # 使用 execute()  方法执行 SQL 查询
+
     cursor.execute(
         "select ts_code,symbol,name,area,industry,fullname,market,exchange,curr_type,list_status,list_date,delist_date,is_hs,update_time from stock_base_info ")
     # 使用 fetchone() 方法获取单条数据.
@@ -154,9 +155,52 @@ def produce_daily_basic_all(trade_date, size):
         print("#####################################################################################")
         produce_daily_basic(trade_date, ts_codes=ts_codes_temp)
 
+
+def testnp():
+    #换手率
+    min_turnover_rate = 10
+    max_turnover_rate = 100
+
+    #量比
+    min_volume_ratio = 2
+    max_volume_ratio = 100
+
+    #市盈率
+    min_pe = 0
+    max_pe =100
+
+    #总市值
+    min_total_mv = 10
+    max_total_mv = 5000
+
+    today = datetime.datetime.now()
+    yestoday = today + datetime.timedelta(days=-1)
+    day = yestoday.strftime('%Y%m%d')
+    list_date = day
+
+    db = get_db()
+    cursor = db.cursor()
+    sqlo = """select a.ts_code,b.name,a.trade_date,a.close,a.turnover_rate,volume_ratio,pe,round(a.total_mv/10000,0) as total_mv,round(a.circ_mv/10000,0) as circ_mv,
+            b.market,b.area,b.industry,b.list_date from stock_daily_basic a inner join stock_base_info b on a.ts_code=b.ts_code
+            where trade_date between '{}' and '{}' and list_date<='{}' """
+    sql = sqlo.format(day, day, list_date)
+    cursor.execute(sql)
+    data = cursor.fetchall()
+    db.close()
+
+    df = pd.DataFrame(list(data))
+
+    df = df[(df[4] >= min_turnover_rate) & (df[4] <= max_turnover_rate) & (df[5] >= min_volume_ratio) & (df[5] <= max_volume_ratio) & (
+                        df[6] >= min_pe) & (df[7] <= max_pe) & (df[7] >= min_total_mv) & (df[7] <= max_total_mv)]
+
+    df = df.sort_values(by=[7], ascending=False)
+
+    print(df)
+
+
+# testnp()
 # produce_stock_base_info()
 # produce_kline_info(freq='D', start_date='20210326', end_date='20210329', ts_codes=['000001.SZ','000004.SZ'])
-# product_kline_info_all('D', "20210326", "20210329",50)
+# product_kline_info_all('D', "20210324", "20210324",100)
 # product_kline_info_all('M', "20210129", "20210129",1)
-# produce_daily_basic(trade_date='20210326', ts_codes=['000001.SZ', '000004.SZ'])
-# produce_daily_basic_all(trade_date='20210329', size=100)
+# produce_daily_basic_all(trade_date='20210324', size=100)
