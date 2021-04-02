@@ -4,9 +4,13 @@ from huobi.constant import *
 from huobi.utils import *
 import pymysql
 import constant
+import re
+
 
 def get_db():
-    return pymysql.connect(host=constant.g_host, user=constant.g_user, password=constant.g_password, database=constant.g_database)
+    return pymysql.connect(host=constant.g_host, user=constant.g_user, password=constant.g_password,
+                           database=constant.g_database)
+
 
 # 获取最近24小时所有交易对的ticker信息入库
 def produce_last24_tickers():
@@ -230,7 +234,6 @@ def produce_symbol_klines(min1, min15, min60, day1):
         db.close
 
 
-
 def get_select_symbols_fromdb():
     try:
         select_symbols = {}
@@ -257,6 +260,7 @@ def get_select_symbols_fromdb():
         db.rollback()
     finally:
         db.close()
+
 
 # 从数据库查询kline聚合信息
 def get_symbol_klines_fromdb(time_type):
@@ -289,6 +293,7 @@ def get_symbol_klines_fromdb(time_type):
         db.rollback()
     finally:
         db.close()
+
 
 def produce_select_symbols():
     select_symbols_old = get_select_symbols_fromdb()
@@ -359,10 +364,21 @@ def produce_select_symbols():
             zhisun_scale = record60['max_shake_percent']
             print("需要插入的交易对 symbol={} zhiying={} zhisun={} day={}".format(symbol, zhiying_scale, zhisun_scale, day))
 
+            pattern = re.compile('[0-9]+')
+            match = pattern.findall(symbol)
+            if match:
+                return
+
             if (zhiying_scale > 0.01 and zhisun_scale < 0.6 and zhisun_scale > zhiying_scale):
                 left = left - 1
                 if (left < 0):
                     return
+
+                if (zhiying_scale > 0.1):
+                    zhiying_scale = 0.1
+
+                if (zhisun_scale < 0.1):
+                    zhisun_scale = 0.1
 
                 print("确定插入交易对{}".format(symbol))
                 cursor = db.cursor()
@@ -405,6 +421,7 @@ def get_order_fromdb():
     finally:
         db.close()
 
+
 def update_order(id, symbol, result_type, result_time):
     try:
         db = get_db()
@@ -419,6 +436,7 @@ def update_order(id, symbol, result_type, result_time):
         db.rollback()
     finally:
         db.close()
+
 
 def get_last_zhiyintime(symbol, time_type, time_id, test_yin):
     try:
@@ -444,6 +462,7 @@ def get_last_zhiyintime(symbol, time_type, time_id, test_yin):
     finally:
         db.close()
 
+
 def get_last_zhisuntime(symbol, time_type, time_id, test_sun):
     try:
         db = get_db()
@@ -467,6 +486,7 @@ def get_last_zhisuntime(symbol, time_type, time_id, test_sun):
         db.rollback()
     finally:
         db.close()
+
 
 def testYinOrSun():
     orders = get_order_fromdb()
@@ -501,3 +521,16 @@ def testYinOrSun():
             update_order(id, symbol, result_type='sun', result_time=zhisun['time_id'])
         else:
             print("no")
+
+
+def test():
+    str = 'dot2lusdt'
+    print(str)
+    pattern = re.compile('[0-9]+')
+    match = pattern.findall(str)
+    if match:
+        print ('contains digital')
+    else:
+        print ('not contains digital')
+
+# test()
