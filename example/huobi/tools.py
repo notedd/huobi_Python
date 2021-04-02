@@ -347,12 +347,12 @@ def produce_select_symbols():
 
     # 判断目前的数量是否达到上线
     count = len(select_symbols_old)
-    if (count > 5):
+    if (count > 10):
         print("超过过当日最大数退出")
         return
 
     # 加入新的交易对
-    left = 5 - count
+    left = 10 - count
     day = time.strftime('%Y-%m-%d', time.localtime(time.time()))
     for symbol in symbol_klines_db_15min:
         try:
